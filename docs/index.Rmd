@@ -1,5 +1,5 @@
 ---
-title: "Repositorio: Curso Estadística Aplicada a Ecología"
+title: "Repositorio: Curso de Estadística Aplicada a Ecología"
 author: "Oscar Carmona Castro"
 date: "2025-03-25"
 output: html_document
