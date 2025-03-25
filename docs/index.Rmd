@@ -1,0 +1,22 @@
+---
+title: "Repositorio: Curso Estadística Aplicada a Ecología"
+author: "Oscar Carmona Castro"
+date: "2025-03-25"
+output: html_document
+---
+
+
+
+### **Índice de asignaturas.**
+
+[Clase 1. Comandos básicos y exploración de datos]()
+
+[Clase 3. Ejercicio de prueba de correlación]()
+
+[Clase 3. Suplementario: Pruebas no paramétricas]()
+
+[Clase 5. GLM-Poisson: Ejercicio]()
+
+[Clase 6. GLM-Binomial: Ejercicio]()
+
+[Extra: Prueba de Mantel]()
