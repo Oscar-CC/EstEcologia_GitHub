@@ -1,0 +1,221 @@
+---
+title: "Clase 1. Comandos básicos y exploración de datos"
+author: "Oscar Carmona Castro"
+date: "2025-03-25"
+output: html_document
+---
+
+## Introducción.
+
+Esta clase está diseñada para enseñarte los comandos básicos en R, incluyendo la creación de variables, tablas y la importación de bases de datos. Además, aprenderás a explorar y analizar tus datos de manera apropiada, siguiendo la metodología de **Zuur et al. (2010)**. Con el tiempo, podrás utilizar estas habilidades básicas en R para realizar análisis más complejos y obtener resultados acordes a tu pregunta de investigación. (**instructor: David Murillo**).
+
+## Ejercicios.
+
+
+# { .tabset}
+## 1. Cargar paquetes
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+
+## 2. Operaciones básicas
+Adición (suma).
+```{r}
+2+2
+```
+Sustracción (resta).
+```{r}
+2-2
+```
+
+Multiplicación.
+```{r}
+2*2
+```
+
+División.
+```{r}
+2/2
+```
+
+Raíz cuadrada.
+```{r}
+sqrt(2)
+```
+
+Otro.
+
+y = intercepto + slope (x)
+```{r}
+34.5 + 0.3*36.4
+```
+
+
+
+## 3. Creación de variables
+
+Variables numéricas con 1 único valor.
+```{r}
+x = 5
+y = -3
+```
+
+Variables numéricas con varios valores.
+```{r}
+Peso = c(12.5, 23, 12.6, 18, 7, 18.3, 23, 40, 21,8)
+```
+
+```{r}
+Altura = c(1:1000)
+```
+
+Variables con números aleatorios.
+```{r}
+Aleatorios = sample(1:1000, size = 50)
+```
+
+Variables con distribución normal.
+```{r}
+Dnormal = rnorm(50, mean = 30, sd = 2.5)
+```
+
+Variables categóricas.
+```{r}
+Variabley = "y"
+```
+
+```{r}
+Seccion = c("1A", "1B", "3A", "2B", "2A", "3A")
+```
+
+
+
+## 4. Creación de tablas
+
+Creación de tabla con 10 observaciones.
+```{r}
+Temperatura = sample(20:35,size = 10)
+Riqueza = rnorm(10, mean = 5, sd = 3)
+Franja = c("A", "A", "C", "C", "A", "B", "B", "B", "A", "C")
+```
+
+```{r}
+Tabla1 = data.frame(Franja, Temperatura, Riqueza)
+```
+
+
+
+## 5. Cargar base de datos.
+```{r}
+Aves.sta = read.csv("data/bird.sta.csv")
+```
+
+
+
+## 6. Estadística descriptiva
+```{r}
+library(palmerpenguins)
+```
+
+```{r}
+data("penguins")
+```
+
+Calcular la media de cada columna del data frame.
+```{r}
+sapply(penguins[ ,3:6], mean, na.rm = TRUE)
+```
+
+Calcular la media de la masa de los pingüinos de cada especie
+```{r}
+tapply(penguins$body_mass_g, penguins$species, mean, na.rm = TRUE)
+```
+
+## 7. Exploración de datos (Zuur et al. 2010) { .tabset}
+Pasos exploratorios de las bases de datos antes de elegir el método estadístico.
+
+### 7.1 Cargar base de datos
+```{r}
+cyanistes = read.table("data/cyanistes.txt", header = TRUE)
+```
+
+### 7.2 Revisar estructura de la base de datos
+```{r}
+str(cyanistes)
+```
+
+Revisar si existen valores "NAs" en la base de datos.
+```{r}
+colSums(is.na(cyanistes))
+```
+
+### 7.3 Valores extremos (outliers)
+Análisis visual.
+```{r}
+boxplot(depth ~ zone,
+        ylab = "Profundidad del nido",
+        xlab = "Zona del bosque",
+        data = cyanistes,
+        outpch = 16,
+        las = 1)
+```
+
+```{r}
+outliers::grubbs.test(cyanistes$depth, type = 10)
+```
+
+```{r}
+outliers::grubbs.test(cyanistes$height, type = 11)
+```
+
+```{r}
+outliers::grubbs.test(cyanistes$day, type = 10)
+```
+
+### 7.4 Normalidad
+```{r}
+shapiro.test(cyanistes$depth)
+```
+
+```{r}
+library(ggplot2)
+ggplot(data = cyanistes, aes(x = height, y = depth)) +
+  geom_point() +
+  geom_hline(yintercept = 0.33, linetype = "dashed") +
+  geom_vline(xintercept = 2.19, linetype = "dashed")
+```
+
+### 7.5 Homogeneidad
+```{r}
+car::leveneTest(depth ~ zone, data = cyanistes)
+```
+
+### 7.6 Exceso de ceros en la variable respuesta
+```{r}
+sum(cyanistes$depth == 0, na.rm = TRUE) * 100 / nrow(cyanistes)
+```
+
+### 7.7 Multicolinealidad entre variables predictoras
+```{r}
+GGally::ggpairs(cyanistes[,2:7])
+```
+
+### 7.8 Relaciones entre variables respuesta y predictoras
+```{r}
+ggplot(data = cyanistes, aes(x = height, y = depth)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  facet_wrap(~ zone) +
+  theme_classic()
+```
+
+
+
+
+
+
+
+
+
+
