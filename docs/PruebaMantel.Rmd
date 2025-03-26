@@ -1,0 +1,207 @@
+---
+title: "Prueba de Mantel"
+author: "Oscar Carmona Castro"
+date: "2025-03-24"
+output: html_document
+---
+
+## Introducción.
+
+**Descripción de la prueba de Mantel basada en McCune y Grace (2002).**
+
+La prueba de Mantel se utiliza para probar la hipótesis nula de que no existe relación entre dos matrices cuadradas simétricas. Esta prueba evalúa la correlación entre matrices de distancia (o de similitud). Generalmente, cada matriz se calcula a partir de diferentes conjuntos de variables, medidos en la misma unidad de muestreo.
+
+La prueba de Mantel es una alternativa a la regresión de una matriz contra otra, evitando el problema de dependencia parcial dentro de cada matriz. Debido a que las celdas en las matrices no son independientes entre sí, no podemos aceptar el valor de P derivado de técnicas estándar que asumen independencia de las observaciones. Sin embargo, la correlación (r) puede utilizarse como una medida de la fuerza de la relación entre las matrices; en este contexto, r se denomina estadística estandarizada de Mantel, y los valores de r oscilan entre -1 y 1 (**instructor: David Murillo**).
+
+
+
+**Cuándo utilizar la prueba de Mantel.**
+
+La prueba de Mantel se utiliza para evaluar la congruencia entre dos matrices de distancias (o similitudes) de las mismas dimensiones. Ambas matrices deben referirse al mismo conjunto de entradas en el mismo orden. Por ejemplo, es útil cuando queremos evaluar la correspondencia entre:
+
+* Dos grupos de organismos en el mismo conjunto de unidades de muestreo (plantas e invertebrados).
+
+* Matrices de disimilitud que representan la estructura de comunidades antes y después de una perturbación.
+
+* Distancia geográfica y distancia ecológica.
+
+* Distancia genética y distancia geográfica.
+
+
+**Qué reportar.**
+
+* Contenido y tamaño de las dos matrices.
+
+* Método de evaluación de la prueba estadística (aproximación asintótica de Mantel o randomización).
+
+* Estadística estandarizada de Mantel r.
+
+* Valor P.
+
+
+## Ejercicios.
+
+
+# { .tabset}
+## 1. Cargar paquetes
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(vegan)
+library(ecodist)
+library(geosphere)
+library(FactoMineR)
+library(factoextra)
+library(readxl)
+```
+
+
+## 2. Cargar base de datos
+```{r}
+Data_bird = read.csv("DataBirdLoc.csv")
+View(Data_bird)
+```
+
+
+## 3. PCAs{ .tabset}
+### 3.1 Aves
+```{r}
+Aves_pca = PCA(Data_bird[ ,35:150], graph = TRUE)
+```
+
+### 3.2 Vegetación
+```{r}
+Veg_pca = PCA(Data_bird[ ,151:158], graph = TRUE)
+```
+
+### 3.3 PCA Biplot-Aves
+```{r}
+fviz_pca_biplot(Aves_pca,
+                axes = c(1,2),
+                habillage = as.factor(Data_bird$Sistema),
+                addEllipses = TRUE,
+                geom = FALSE,
+                arrow = FALSE,
+                geom.var = "point")
+```
+
+### 3.4 PCA Biplot-Vegetación
+```{r}
+fviz_pca_biplot(Veg_pca,
+                axes = c(1,2),
+                habillage = as.factor(Data_bird$Sistema),
+                addEllipses = TRUE,
+                geom = FALSE,
+                arrow = FALSE,
+                geom.var = "text")
+```
+
+## 4. Estimación de distancias geográficas entre sitios
+```{r}
+DistanciaSitios = as.matrix(Data_bird[ ,c("LONG", "LAT")])
+```
+
+```{r}
+matrixDist = distm(DistanciaSitios, fun = distHaversine)
+```
+
+Cambiar unidades (kilometros).
+```{r}
+matrixDist_km = matrixDist / 1000
+```
+
+```{r}
+colnames(matrixDist_km) = Data_bird$Sitio
+rownames(matrixDist_km) = Data_bird$Sitio
+```
+
+```{r}
+matrixDist_km
+```
+
+
+## 5. Estimación de distancia ecológica entre aves
+?distance
+```{r}
+aves_dist = distance(Data_bird[ ,35:150], "bray-curtis")
+```
+
+## 6. Estimación de distancia ecológica entre vegetación
+```{r}
+veg_dist = distance(Data_bird[ ,151:158], "euclidean")
+```
+
+
+## 7. Prueba de Mantel { .tabset}
+?mantel
+
+### 7.1 Matriz de distancia geográfica vs distancia ecológica de las aves
+```{r}
+vegan::mantel(matrixDist_km, aves_dist, 
+              method = "pearson",
+              permutations = 1000)
+```
+
+Interpretación:
+
+La distancia geográfica explica el 15% de la distancia ecológica de las aves y es estadísticamente significativo.
+
+
+
+### 7.2 Matriz de distancia geográfica vs distancia ecológica de la vegetación
+```{r}
+vegan::mantel(matrixDist_km, veg_dist, 
+              method = "pearson",
+              permutations = 1000)
+```
+
+Interpretación:
+
+La distancia geográfica explica el 17% de la distancia ecológica de las aves y es estadísticamente significativo.
+
+
+
+### 7.3 Matriz de distancia de vegetación vs distancia ecológica de las aves
+```{r}
+vegan::mantel(veg_dist, aves_dist, 
+              method = "pearson",
+              permutations = 1000)
+```
+
+Interpretación:
+
+La distancia ecológica de la vegetación explica el 32% de la distancia ecológica de las aves y es estadísticamente significativo.
+
+
+
+## 8. Prueba Parcial
+¿Cuánto explica la distancia geográfica (km) a la distancia ecológica de las aves, sabiendo que hay una relación entre la distanica ecológica de la vegetación y la distancia ecológica de las aves?
+
+```{r}
+mantel.partial(veg_dist, aves_dist, matrixDist_km,
+               method = "pearson",
+               permutations = 1000)
+```
+
+Interpretación:
+
+La vegetación explica el 30% de la distancia ecológica de las aves y es estadísticamente significativo.
+
+
+
+```{r}
+mantel.partial(matrixDist_km, aves_dist, veg_dist,
+               method = "pearson",
+               permutations = 1000)
+```
+
+Interpretación:
+
+La distancia geográfica explica solo el 10% de la distancia ecológica de las aves y no es estadísticamente significativo.
+
+
+
+Interpretación Final:
+
+La comunidad de aves se explica mejor por la vegetación y es estadísticamente significativo (p=0.0009) mientras que la distancia geográfica aporta menos explicación acerca de la distancia ecológica de las aves y su resultado no es significativo (p=0.0919).
+
+
