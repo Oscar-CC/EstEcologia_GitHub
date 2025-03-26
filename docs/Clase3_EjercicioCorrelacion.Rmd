@@ -1,0 +1,202 @@
+---
+title: "Clase 3. Ejercicio de prueba de correlación"
+author: "Oscar Carmona Castro"
+date: "2025-03-25"
+output: html_document
+---
+
+## Introducción.
+
+El análisis de correlación es una técnica estadística utilizada para determinar si hay una relación entre dos variables. Esta relación se puede medir utilizando el coeficiente de correlación, que puede variar entre -1 y 1. Un coeficiente de correlación cercano a 1 indica una correlación positiva fuerte, lo que significa que, a medida que una de las variables aumenta, la otra también aumenta de manera predecible. Un coeficiente de correlación cercano a -1 indica una correlación negativa fuerte, lo que significa que, a medida que una de las variables aumenta, la otra disminuye de manera predecible. Un coeficiente de correlación cercano a 0 indica una correlación débil o nula entre las variables. (**instructor: David Murillo**).
+
+#
+#
+#
+#### **Investigar para qué se utiliza y cómo se aplica la prueba T de Student.**
+
+La prueba T de Student se utiliza para estimar si existen diferencias entre dos grupos. Esta prueba asume que los datos tienen una distribución normal y homogeneidad en las varianzas, por lo que se considera una prueba paramétrica.
+
+La comparación estadística se realiza sobre el valor de las medias de los dos grupos, donde tenemos:
+
+* H0: La media de los dos grupos es la misma (p ≥ 0.05).
+
+* Ha: La media de los dos grupos es diferente (p < 0.05).
+
+#
+#
+#
+#### **Investigar para qué se utiliza y cómo se aplica la prueba de Kruskal-Wallis.**
+
+La prueba de Krukal-Wallis se utiliza para estimar si existen diferencias entre dos o más grupos. Esta prueba asume que los datos no tienen una distribución normal, por lo que se considera una prueba no paramétrica, y es una prueba alternativa a la ANOVA.
+
+La comparación estadística se realiza sobre el valor de las medianas de los grupos, donde tenemos:
+
+* H0: Las medianas de los grupos son iguales (p ≥ 0.05).
+
+* Ha: Las medianas de los grupos son diferentes (p < 0.05).
+
+#
+#
+#
+#### **Realizar la prueba de correlación utilizando la base de datos *Barn owls*.**
+El conjunto de datos de las Barn owls (*Tyto alba*) proviene del estudio de **Charter et al. (2018)**, quienes investigaron el comportamiento parasitario de crías de lechuzas en Israel. Se observó que algunas crías de lechuza dejaban su propio nido y se mudaban a un nido vecino, donde luego eran alimentadas por, o robaban comida de, sus nuevos “padres adoptivos”. El objetivo de este estudio fue comprender el impacto del cambio de nido en las crías de estos padres adoptivos. El estudio mostró que 12 crías de lechuza abandonaron su nido de origen y se trasladaron a 9 nidos anfitriones de un total de 111 nidos monitoreados. Los datos de estos 9 nidos “parasitados” fueron investigados en mayor profundidad.
+
+Los objetivos del estudio fueron:
+
+* Evaluar si había una asociación entre la edad de las crías parasitarias de lechuza y las crías anfitrionas.
+
+* Evaluar si había una asociación entre la edad de las crías anfitrionas cuando se detectó a una cría parasitaria de lechuza en el nido anfitrión y el número de crías anfitrionas que lograron emplumar exitosamente desde ese nido.
+
+El dataframe comprende 9 observaciones de 5 variables. Cada fila en el dataframe representa un nido anfitrión de lechuza separado al cual una cría de otro nido se trasladó. La variable hosbox es un código único para identificar el nido anfitrión. El número de días después del primero de enero en que los huevos de la cría parasitaria de lechuza (layday_para) y de la cría anfitriona (layday_host) fueron puestos, la edad del nido (age_para) y el número de crías de lechuza que emplumaron del nido parasitado (fled_host) son todas variables continuas.
+
+#
+#
+#
+## Ejercicios.
+
+
+# { .tabset}
+## 1. Cargar paquetes
+```{r, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(rio)
+library(car)
+library(MVN)
+```
+
+
+## 2. Cargar base de datos
+```{r}
+owl = read.table(file = "https://www.dropbox.com/s/0zpy65cr9ml47b6/owl.txt?dl=1",
+                 header = TRUE, dec= ".", stringsAsFactors = T)
+head(owl)
+```
+
+
+## 3. Explorar supuesto de normalidad { .tabset}
+### 3.1 Variable 1 (lay_daypara)
+
+El número de días después del primero de enero en que los huevos de la cría parasitaria de lechuza fueron puestos.
+```{r}
+shapiro.test(owl$layday_para)
+```
+
+```{r}
+qqPlot(owl$layday_para)
+```
+
+Datos con distribución normal.
+
+### 3.2 Variable 2 (layday_host)
+
+El número de días después del primero de enero en que los huevos de la cría anfitriona de lechuza fueron puestos.
+```{r}
+shapiro.test(owl$layday_host)
+```
+
+```{r}
+qqPlot(owl$layday_host)
+```
+
+Datos con distribución normal.
+
+### 3.3 Variable 3 (age_para)
+
+Edad del nido.
+```{r}
+shapiro.test(owl$age_para)
+```
+
+```{r}
+qqPlot(owl$age_para)
+```
+
+Datos con distribución normal.
+
+### 3.4 Variable 4 (fled-host)
+
+Número de crías de lechuza que emplumaron del nido parasitado.
+```{r}
+shapiro.test(owl$fled_host)
+```
+
+```{r}
+qqPlot(owl$fled_host)
+```
+
+Datos sin distribución normal.
+
+
+### 3.5 Normalidad multivariada
+
+Otra forma de verificar es con una prueba de normalidad multivariada con el paquete **MVN**.
+```{r}
+multitest_norm = mvn(data = owl[, 2:5],
+                     univariateTest = "SW",
+                     mvnTest = "royston")
+
+multitest_norm
+```
+
+Todas las variables presentan normalidad, excepto la Variable 4: fled-host (número de crías de lechuza que emplumaron del nido parasitado).
+
+Por lo que se puede utilizar una **Prueba de Correlación de Spearman (prueba no paramétrica)**, para evaluar la relación de nuestras variables de interés.
+
+
+
+## 4. Análisis de correlación de Spearman { .tabset}
+
+1.  Variable 1 (lay_daypara). Número de días después del primero de enero en que los huevos de la cría parasitaria de lechuza fueron puestos.
+
+2.  Variable 2 (lay_dayhost). Número de días después del primero de enero en que los huevos de la cría anfitriona de lechuza fueron puestos.
+
+3.  Variable 3 (age_para). Edad del nido.
+
+4.  Variable 4 (fled_host). Número de crías de lechuza que emplumaron del nido parasitado.
+
+
+### 4.1 Variable 1 vs Variable 4
+```{r}
+cor.test(owl$layday_para, owl$fled_host, method = "spearman")
+```
+
+```{r}
+ggplot(data = owl, aes(x = layday_para, y = fled_host)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  theme_classic()
+```
+
+Existe poca relación entre ambas variables, y es negativa (RHO = -0.1661). Es decir que la variable del tiempo en que los huevos de la cría parasitaria de lechuza fueron puestos y el número de crías de lechuza que emplumaron del nido parasitado no tienen una relación estrecha.
+
+
+### 4.2 Variable 2 vs Variable 4
+```{r}
+cor.test(owl$layday_host, owl$fled_host, method = "spearman")
+```
+
+```{r}
+ggplot(data = owl, aes(x = layday_host, y = fled_host)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  theme_classic()
+```
+
+Existe relación entre ambas variables, y es negativa (RHO = -0.5602). Es decir que cuando incrementa el tiempo en que los huevos de la cría anfitriona de lechuza fueron puestos, disminuye el número de crías de lechuza que emplumaron del nido parasitado.
+
+### 4.3 Variable 3 vs Variable 4
+```{r}
+cor.test(owl$age_para, owl$fled_host, method = "spearman")
+```
+
+```{r}
+ggplot(data = owl, aes(x = age_para, y = fled_host)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  theme_classic()
+```
+
+Existe relación fuerte entre ambas variables, y es positiva (RHO = -0.8464). Es decir que cuando incrementa la edad del nido, incrementa el número de crías de lechuza que emplumaron del nido parasitado.
+
+

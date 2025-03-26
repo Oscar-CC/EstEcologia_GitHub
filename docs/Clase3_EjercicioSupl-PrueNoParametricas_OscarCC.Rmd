@@ -1,0 +1,300 @@
+---
+title: "Clase 3. Suplementario: Pruebas no paramétricas"
+author: "Oscar Carmona Castro"
+date: "2025-03-25"
+output: html_document
+---
+
+## Introducción.
+
+Las pruebas no paramétricas son un conjunto de técnicas de prueba estadística que se utilizan para evaluar hipótesis sobre una población cuando no se tienen suficientes datos para suponer una distribución particular de los datos. A diferencia de las pruebas paramétricas, que asumen una distribución particular de los datos (como la distribución normal), las pruebas no paramétricas no requieren ninguna suposición sobre la distribución de los datos.
+
+Algunas pruebas no paramétricas comunes incluyen:
+
+* Prueba de Wilcoxon: se utiliza para comparar dos grupos de datos ordenados y se utiliza a menudo cuando los datos no siguen una distribución normal.
+
+* Prueba de Kruskal-Wallis: se utiliza para comparar más de dos grupos de datos ordenados y se utiliza a menudo cuando los datos no siguen una distribución normal.
+
+* Prueba de Mann-Whitney: se utiliza para comparar dos grupos de datos no ordenados y se utiliza a menudo cuando los datos no siguen una distribución normal.
+
+* Prueba de chi-cuadrado: se utiliza para comparar una distribución observada de datos con una distribución esperada y se utiliza a menudo para comparar datos categóricos.
+
+Es importante tener en cuenta que las pruebas no paramétricas suelen ser menos robustas (es decir, tienen menor capacidad para detectar diferencias significativas) que las pruebas paramétricas, por lo que es importante elegir la prueba adecuada para su conjunto de datos y objetivo de investigación (**instructor: David Murillo**).
+
+#
+#
+#
+## Ejercicios.
+
+
+# { .tabset}
+## 1. Cargar paquetes
+```{r, message=FALSE, warning=FALSE}
+library(palmerpenguins)
+library(FSA)
+library(vcd)
+library(ggplot2)
+```
+
+## 2. Prueba de Wilcoxon
+```{r}
+Delomys = read.csv("data/delomys.csv")
+head(Delomys)
+```
+
+```{r}
+wilcox.test(body_mass ~ sex, data = Delomys)
+```
+
+Si hay diferencias significativas entre los grupos (p < 0.05).
+
+
+## 3. Prueba de U Mann-Whitney
+```{r}
+wilcox.test(body_mass ~ sex, data = Delomys, alternative = "two.sided")
+```
+
+Si hay diferencias significativas entre los grupos (p < 0.05).
+
+
+## 4. Prueba de Kruskal-Wallis
+```{r}
+data(penguins)
+head(penguins)
+```
+
+```{r}
+kruskal.test(body_mass_g ~ species, data = penguins)
+```
+
+Si hay diferencias significativas entre los grupos (p < 0.05).
+
+Como se puedo observar el resultado indica que hay diferencias significativas de la masa del cuerpo por especie de pinguino, ahora necesitaremos realizar una prueba de contraste. En este caso utilizaremos la prueba Dunn.
+
+La prueba de Dunn es una prueba no paramétrica utilizada para comparar más de dos grupos de datos ordenados. Esta prueba se utiliza a menudo después de realizar una prueba de Kruskal-Wallis, que es otra prueba no paramétrica utilizada para comparar más de dos grupos de datos ordenados, cuando se ha encontrado una diferencia significativa entre al menos dos de los grupos.
+
+```{r}
+dunnTest(body_mass_g ~ species, data = penguins)
+```
+
+Con estos resultados podemos afirmar que SI hay diferencias de la masa (gr.) de una de las tes especies de pingüinos.
+
+En este caso no hay diferencias en la masa entre las especies Adelie y Chinstrap. Pero Gentoo si es diferente que Adelie y que Chinstrap, y tiene mayor masa (gr.) que ambas especies.
+
+
+## 5. Prueba de chi-cuadrado
+
+Primero creamos nuestra tabla de contingencia.
+```{r}
+TablaCon = table(Delomys$status, Delomys$age)
+TablaCon
+```
+
+```{r}
+chisq.test(TablaCon)
+```
+
+Y luego se realiza el gráfico.
+```{r}
+barplot(TablaCon,
+        main = "Gráfico de chi cuadrado", 
+        xlab = "Edad", 
+        ylab = "Estado")
+
+```
+
+Otra forma de graficar el resultado.
+```{r}
+mosaic(~ status + age, data = Delomys, shade = T)
+```
+
+## 6. Gráficos { .tabset}
+### 6.1 Gráfico de barra
+
+**Primer ejemplo: Sexo por Masa.**
+
+```{r}
+ggplot(data= penguins, aes(x= sex, y = body_mass_g)) +
+  geom_bar(stat = "identity",
+           fill = "lightblue") +
+  labs(title = "Masa del cuerpo por sexo en pingüinos",
+       y= "Masa en gramos",
+       x= "Sexo")+
+  theme_classic()
+
+```
+
+¿Qué se observa con este gráfico?
+
+En esta gráfica podemos observar la comparación de las medianas de la masa (gr.) de los pingüinos por sexo (hembra/macho).
+
+
+¿Sera apropiado para visualizar una comparacion?
+
+Lo más apropiado sería realizar un gráfico que incluya la comparación de las medias, las barras de error estándar y el resultado de una prueba estadística que de mayor robustez al resultado.
+
+
+**Segundo ejemplo: Sexo por Masa.**
+Primero necesitaremos organizar nuestros datos para obtener la media y error estandar.
+
+```{r}
+Sex_body = Summarize(body_mass_g ~ sex, data = penguins)
+Sex_body
+```
+
+```{r}
+Sex_body$ES = Sex_body$sd / sqrt(Sex_body$n)
+```
+
+Una vez que tenemos nuestra tabla podemos graficar.
+```{r}
+ggplot(data= Sex_body, aes(x= sex, y = mean)) +
+  geom_bar(stat = "identity",
+           fill = "lightblue") +
+  geom_errorbar(aes(ymin= mean - ES,
+                    ymax= mean + ES)) +
+  labs(title = "Masa del cuerpo por sexo en pingüinos",
+       y= "Masa en gramos",
+       x= "Sexo")+
+  theme_classic()
+
+```
+
+¿Qué se observa con este gráfico?
+
+Se observa que si existe una diferencia en la masa (gr.) de los pingüinos por sexo (hembras/machos). Las hembras tienen menor masa que los machos.
+
+¿Sera apropiado para visualizar una comparacion?
+
+Si es apropiado, pero aún se puede agregar el resultado de una prueba estadística que de mayor robustez al resultado.
+
+
+
+### 6.2 Gráfico de caja modificado
+**Primer ejemplo: Sexo por Masa.**
+
+```{r}
+ggplot(data = penguins, aes(x = sex, y = body_mass_g)) +
+  geom_boxplot() +
+  labs(title = "Masa del cuerpo por sexo en pingüinos",
+       y= "Masa en gramos",
+       x= "Sexo")+
+  theme_classic()
+
+```
+
+¿Qué se observa con este gráfico?
+
+En este gráfico se observan las medianas de la masa (gr.) de los pingüinos cuando son hembras y cuando son machos.
+
+
+¿Sera apropiado para visualizar una comparacion?
+
+Para realizar una comparación sería mejor graficar las medias y el error estándar, y agregar el resultado de una prueba estadística que de mayor robustez al resultado.
+
+
+
+**Segundo ejemplo: Sexo por Masa**
+
+Primero necesitaremos organizar nuestros datos para obtener la media y error estandar.
+
+```{r}
+Sex_body = Summarize(body_mass_g ~ sex, data = penguins)
+Sex_body
+```
+
+```{r}
+Sex_body$ES = Sex_body$sd / sqrt(Sex_body$n)
+```
+
+Una vez que tenemos nuestra tabla podemos graficar.
+
+```{r}
+ggplot(data = Sex_body, aes(x = sex, y = mean)) +
+  geom_point(size = 5, shape = 15) +
+  geom_errorbar(aes(ymin = mean - ES,
+                    ymax = mean + ES),
+                width = 0.5) +
+  labs(title = "Masa del cuerpo por sexo en pingüinos",
+       y= "Masa en gramos",
+       x= "Sexo")+
+  theme_classic()
+```
+
+¿Qué se observa con este gráfico?
+
+En esta gráfica podemos observar que si existe una diferencia en la masa (gr.) de los pingüinos por sexo (hembras/machos). Las hembras tienen menor masa que los machos.
+
+
+¿Sera apropiado para visualizar una comparacion?
+
+Si es apropiado, pero aún se puede agregar el resultado de una prueba estadística que de mayor robustez al resultado.
+
+
+**Tercer ejemplo: Especie por Masa.**
+
+```{r}
+ggplot(data = penguins, aes(x = species, y = body_mass_g)) +
+  geom_boxplot() +
+  labs(title = "Masa del cuerpo por especie en pingüinoss",
+       y = "Masa en gramos",
+       x = "Especie") +
+  annotate("text", x = "Adelie", y = 5000, label = "a")+
+  annotate("text", x = "Chinstrap", y = 5000, label = "a")+
+  annotate("text", x = "Gentoo", y = 6500, label = "a")+
+  theme_classic()
+
+```
+
+¿Qué se observa con este gráfico?
+
+En esta gráfica podemos observar la comparación entre las medianas de la masa (gr.) de las diferentes especies de pingüinos.
+
+
+¿Sera apropiado para visualizar una comparacion?
+
+Lo más apropiado sería realizar un gráfico de las medias y los errores estándar, y agregar el resultado de una prueba estadística que de mayor robustez al resultado.
+
+
+**Cuarto ejemplo: Especie por Masa.**
+Primero necesitaremos organizar nuestros datos para obtener la media y error estandar.
+
+```{r}
+Especie_body = Summarize(body_mass_g ~ species, data= penguins)
+Especie_body
+```
+
+```{r}
+Especie_body$ES = Sex_body$sd / sqrt(Especie_body$n)
+```
+
+Luego podemos graficar.
+
+```{r}
+ggplot(data = Especie_body, aes(x = species, y = mean)) +
+   geom_point(size = 5, shape = 15) +
+   geom_errorbar(aes(ymin = mean - ES,
+                    ymax = mean + ES),
+                width = 0.5) +
+  labs(title = "Masa del cuerpo por especie en pingüinos",
+       y= "Masa en gramos",
+       x= "Especie") +
+  annotate("text", x = "Adelie", y = 4000, label = "a") +
+  annotate("text", x = "Chinstrap", y = 4000, label = "a") +
+  annotate("text", x = "Gentoo", y = 5200, label = "b") +
+  theme_classic()
+
+```
+
+¿Qué se observa con este gráfico?
+
+En esta gráfica podemos observar que SI hay diferencias de la masa (gr.) de una de las tes especies de pingüinos, denotado por las tres letras "a, a, b".
+
+En este caso no hay diferencias en la masa entre las especies Adelie y Chinstrap. Pero Gentoo si es diferente que Adelie y que Chinstrap, y tiene mayor masa (gr.) que ambas especies.
+
+
+¿Sera apropiado para visualizar una comparacion?
+
+Si es apropiado, pero aún se puede agregar el resultado de una prueba estadística que de mayor robustez al resultado.
+
+
