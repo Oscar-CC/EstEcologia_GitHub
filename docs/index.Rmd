@@ -9,14 +9,14 @@ output: html_document
 
 ### **Índice de asignaturas.**
 
-[Clase 1. Comandos básicos y exploración de datos]()
+[Clase 1. Comandos básicos y exploración de datos](Clase1_ComandosBasicos_ExploracionDatos.html)
 
-[Clase 3. Ejercicio de prueba de correlación]()
+[Clase 3. Ejercicio de prueba de correlación](Clase3_EjercicioCorrelacion.html)
 
-[Clase 3. Suplementario: Pruebas no paramétricas]()
+[Clase 3. Suplementario: Pruebas no paramétricas](Clase3_EjercicioSupl-PrueNoParametricas_OscarCC.html)
 
-[Clase 5. GLM-Poisson: Ejercicio]()
+[Clase 5. GLM-Poisson: Ejercicio](Clase5_GLMPoisson_Ejercicio.html)
 
-[Clase 6. GLM-Binomial: Ejercicio]()
+[Clase 6. GLM-Binomial: Ejercicio](Clase6_GLM_Binomial_Ejercicio.html)
 
-[Extra: Prueba de Mantel]()
+[Extra: Prueba de Mantel](PruebaMantel.html)
