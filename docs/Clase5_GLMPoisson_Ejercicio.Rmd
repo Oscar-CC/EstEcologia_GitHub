@@ -1,0 +1,206 @@
+---
+title: "Clase 5. GLM-Poisson: Ejercicio"
+author: "Oscar Carmona Castro"
+date: "2025-03-25"
+output: html_document
+---
+
+## Ejercicio.
+
+Elaborar una tabla de selección de modelos para identificar el modelo o los modelos más adecuados para explicar la abundancia del mejillón de agua dulce de Nueva Zelanda (Anodonta anatina). Realizar la validación y graficado del modelo (**instructor: David Murillo**).
+
+
+# { .tabset}
+## 1. Cargar paquetes
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(DHARMa)
+library(AICcmodavg)
+library(ggeffects)
+```
+
+
+## 2. Cargar base de datos (mejillones)
+```{r}
+mejillones = read.table("https://www.dropbox.com/s/q8tpwcfsh232g4s/muss.txt?dl=1", header = T, dec = ".", stringsAsFactors = T)
+
+View(mejillones)
+```
+
+**Variables:**
+
+* depth: Profundidad del agua
+
+* subs: substrato, es un factor con tres niveles (gravel, mud, sand)
+
+* unio: abundancia de Unio pictorum + U. tumidus
+
+* duck: abundancia de New Zealand duck mussel o Anodonta anatina
+
+* swan: abundancia de The swan mussel, o Anodonta cygnea
+
+
+Convertir variable "subs" a factor
+```{r}
+mejillones$subs = factor(mejillones$subs)
+head(mejillones)
+```
+
+
+## 3. Ajuste de modelos
+```{r}
+Modelos_duck = list(
+
+"profundidad" = glm(duck ~ depth, family = "poisson", data = mejillones),
+"sustrato" = glm(duck ~ subs, family = "poisson", data = mejillones),
+"pro_y-sus" = glm(duck ~ depth + subs, family = "poisson", data = mejillones),
+
+"int_pro_sus" = glm(duck ~ depth*subs, family = "poisson", data = mejillones),
+"int2_pro_sus" = glm(duck ~ depth:subs, family = "poisson", data = mejillones),
+"nulo" = glm(duck ~ 1, family = "poisson", data = mejillones)
+
+)
+```
+
+
+## 4. Selección de modelos
+```{r}
+aictab(Modelos_duck)
+```
+
+Los modelos explican el 100% de la abundancia del mejillón Anodonta anatina (columna AIC cWt).
+Sin embargo seleccionamos los modelos que explican ≈80% de la distribución del mejillón (Modelo1 = int_pro_sus: 51%; Modelo2 = profundidad: 26%).
+
+
+## 5. Validación de los modelos { .tabset}
+### 5.1 Modelo1 = int_pro_sus
+```{r}
+testResiduals(Modelos_duck$int_pro_sus)
+```
+
+Prueba de sobredispersión
+```{r}
+testOverdispersion(Modelos_duck$int_pro_sus)
+```
+
+Interpretación de la validación del Modelo1: int_pro_sus.
+
+Los datos no tienen una distribución normal, presentan datos atípicos (outiliers), y existe sobredispersión de los datos (dispersion = 2.1797, p-value < 2.2e-16).
+
+
+
+### 5.2 Modelo2 = profundidad
+```{r}
+testResiduals(Modelos_duck$profundidad)
+```
+
+Prueba de sobredispersión.
+```{r}
+testOverdispersion(Modelos_duck$profundidad)
+```
+
+Interpretación de la validación del Modelo2: profundidad.
+
+Los datos no tienen una distribución normal, presentan datos atípicos (outiliers), y existe sobredispersión de los datos (dispersion = 2.252, p-value < 2.2e-16).
+
+
+
+## 6 Interpretación de los modelos (summary) { .tabset}
+### 6.1 Modelo1 = int_pro_sus
+```{r}
+summary(Modelos_duck$int_pro_sus)
+```
+
+Intervalos de confianza
+```{r}
+confint(Modelos_duck$int_pro_sus)
+```
+
+```{r}
+coef(Modelos_duck$int_pro_sus)
+```
+
+```{r}
+car::vif(Modelos_duck$int_pro_sus)
+```
+
+Variables que SI pueden explicar la abundancia del mejillón de la especie Anodonta anatina (mellión de New Zealand):
+
+* Profundidad.
+ 
+* Sustrato arena.
+ 
+* Profundiad, sustrato de musgo.
+ 
+* Profundidad, sustrato de arena.
+ 
+ 
+Variables que NO pueden explicar la abundancia del mejillón de la especie Anodonta anatina (mellión de New Zealand):
+
+* Sustrato musgo.
+ 
+* Sustrato grava.
+
+
+Sin embargo se puede observar una elevada correlación entre las variables "profundidad y sustrato" (gvif > 4).
+Prosegiumos a interpretar el Modelo 2 = profundidad.
+
+
+### 6.2 Modelo2 = profundidad
+```{r}
+summary(Modelos_duck$profundidad)
+```
+
+Resultados en forma logarítmica.
+Entonces se necesitan pasar los resultados a valor exponencial para realizar la interpretación biológica.
+```{r}
+exp(0.3954)
+```
+Incluir intervalos de confianza
+```{r}
+confint(Modelos_duck$profundidad)
+```
+
+```{r}
+coef(Modelos_duck$profundidad)
+```
+
+Este modelo explica una relación positiva donde a mayor profundidad aumenta la abundancia de mejillones de la especie Anodonta anatina (mellión de New Zealand). Si la profundidad aumenta en 1.48, la abundancia del mejillón aumentará en 1 unidad.
+
+
+
+## 7 Gráficos { .tabset}
+### 7.1 Modelo1 = int_pro_sus
+```{r}
+sjPlot::plot_model(Modelos_duck$int_pro_sus, type = "int",
+                   terms = "subs*depth") +
+  labs(title = "Relación de la profundidad y el sustrato en la abundancia")
+```
+
+```{r}
+ggsave("resultados/duck_int_pro_sus.png", plot = last_plot(),
+       units = "cm", width = 15, height = 9, dpi = 350)
+```
+
+
+
+### 7.2 Modelo2 = profundidad
+```{r}
+plot_profundidad = ggpredict(Modelos_duck$profundidad, terms = "depth[n = 100]")
+```
+
+```{r}
+plot(plot_profundidad, colors = "tomato", line = 1) +
+  geom_point(data = mejillones, aes(x = depth, y = duck)) +
+  labs(title = "Relación de la profundidad en la abundancia") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, face = 1))
+```
+
+```{r}
+ggsave("resultados/duck_profundidad.png", plot = last_plot(),
+       units = "cm", width = 15, height = 9, dpi = 350)
+```
+
+
+

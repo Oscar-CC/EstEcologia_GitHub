@@ -1,0 +1,251 @@
+---
+title: "Clase 6. GLM-Binomial: Ejercicio"
+author: "Oscar Carmona Castro"
+date: "2025-03-25"
+output: html_document
+---
+
+## Ejercicio
+Con la base de datos **AvesHabitat.csv**, selecciona una especie en particular y ajusta diferentes modelos, al menos 5. Selecciona el más adecuado, realiza la validación y graficar los resultados (**instructor: David Murillo**).
+
+
+# { .tabset}
+## 1. Cargar paquetes
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggeffects)
+library(DHARMa)
+library(AICcmodavg)
+library(multcomp)
+library(MuMIn)
+```
+
+
+## 2. Cargar base de datos (AvesHabitat)
+```{r}
+Aves = read.csv("data/AvesHabitat.csv") |>
+  mutate_if(is.integer, as.factor)
+
+View(Aves)
+```
+
+Exploración de base de datos
+```{r}
+str(Aves)
+```
+
+Eliminar NAs
+```{r}
+Aves2 = drop_na(Aves)
+```
+
+
+
+## 3. Ajuste de modelos
+
+Especie de interés:
+
+* GLABRA
+
+
+Variables de interés:
+
+* Type
+
+* habitat
+
+* ALTITUDE 
+
+```{r}
+Modelos_aves = list (
+  "tipo" = glm(GLABRA ~ Type, family = "binomial", data = Aves2),
+  "habitat" = glm(GLABRA ~ habitat, family = "binomial", data = Aves2),
+  "altitud" = glm(GLABRA ~ ALTITUDE, family = "binomial", data = Aves2),
+  
+  "tipo + habitat" = glm(GLABRA ~ Type + habitat, family = "binomial", data = Aves2),
+  "habitat + altitud" = glm(GLABRA ~ habitat + ALTITUDE, family = "binomial", data = Aves2),
+  "tipo + altitud" = glm(GLABRA ~ Type + ALTITUDE, family = "binomial", data = Aves2)
+  
+)
+```
+
+
+## 4. Selección de modelos
+```{r}
+aictab(Modelos_aves)
+```
+
+Los modelos explican el 100% de la presencia de la especie GLABRA (columna AIC cWt).
+
+Sin embargo seleccionamos los siguientes modelos que explican ≈80% de la presencia de la especie:
+
+* Modelo1 = altitud (22%).
+
+* Modelo2 = tipo (22%)
+
+* Modelo3 = habitat (22%)
+
+* Modelo4 = tipo + habitat (22%)
+
+
+
+## 5 Revisión de modelos: variables categóricas { .tabset}
+### 5.1 Modelos con variables categóricas (tipo; habitat) { .tabset}
+
+#### 5.1.1 Modelo2 = tipo
+```{r}
+summary(Modelos_aves$tipo)
+```
+
+Se puede observar que el "Tipo F" tiene mayor probabilidad de explicar la presencia de la especie GLABRA.
+
+INTERCEPTO: TypeC (-0.7472)
+
+TypeF: TypeC + TypeF
+
+
+Se realiza la transformación a probabilidad (plogis).
+```{r}
+plogis(-0.7472) # TypeC
+```
+
+Probabilidad de presencia de GLABRA en Tipo C = 32%.
+
+
+```{r}
+plogis(-0.7472 + 0.0540) # TypeC + TypeF
+```
+
+Probabilidad de presencia de GLABRA en Tipo F = 33%
+
+
+Otra forma, integrando los intervalos de confianza (IC95%)
+```{r}
+ggpredict(Modelos_aves$tipo)
+```
+
+
+Graficar
+```{r}
+plot(ggpredict(Modelos_aves$tipo))
+```
+
+#### 5.1.2 Modelo3 = habitat
+```{r}
+summary(Modelos_aves$habitat)
+```
+
+A pesar de que esta variable contiene tres niveles (AF, PF, SF), solo dos niveles explican la presencia de la especie GLABRA (SF y AF).
+
+Se puede observar que el "habitatSF" tiene mayor probabilidad de explicar la presencia de la especie GLABRA.
+
+INTERCEPTO: habitatAF (-0.7472)
+
+habitatSF: habitatAF + habitatSF
+
+
+Se realiza la transformación a probabilidad (plogis).
+```{r}
+plogis(-0.7472) # habitatAF
+```
+
+Probabilidad de presencia de GLABRA en habitatAF = 32%.
+
+
+```{r}
+plogis(-0.7472 + 0.0540) # habitatAF + habitatSF
+```
+
+Probabilidad de presencia de GLABRA en Tipo F = 33%
+
+
+Otra forma, integrando los intervalos de confianza (IC95%)
+```{r}
+ggpredict(Modelos_aves$habitat)
+```
+
+Graficar
+```{r}
+plot(ggpredict(Modelos_aves$habitat))
+```
+
+
+#### 5.1.3 Prueba de contraste { .tabset}
+```{r}
+library(multcomp)
+```
+
+Modelo2 = tipo
+```{r}
+Type_con = glht(Modelos_aves$tipo, mcp("Type" = "Tukey"))
+```
+
+```{r}
+summary(Type_con)
+```
+
+No hay diferencias significativas entre el Tipo F y Tipo C, que permitan explicar la presencia de la especie GLABRA.
+
+
+Modelo3 = habitat
+```{r}
+habitat_con = glht(Modelos_aves$habitat, mcp("habitat" = "Tukey"))
+```
+
+```{r}
+summary(Type_con)
+```
+
+No hay diferencias significativas entre el Tipo F y Tipo C, que permitan explicar la presencia de la especie GLABRA.
+
+
+
+### 5.2 Revisión de modelos: variables numéricas { .tabset}
+Ahora evaluaremos el modelo que contiene la variable numérica.
+
+#### 5.2.1 Modelo1 = altitud
+```{r}
+summary(Modelos_aves$altitud)
+```
+
+```{r}
+plot(ggpredict(Modelos_aves$altitud, terms = "ALTITUDE[n = 100]"))
+```
+
+
+
+## 6 Revisión de supuestos
+```{r}
+testResiduals(Modelos_aves$tipo)
+```
+
+```{r}
+testResiduals(Modelos_aves$habitat)
+```
+
+```{r}
+testResiduals(Modelos_aves$altitud)
+```
+
+```{r}
+testResiduals(Modelos_aves$`tipo + habitat`)
+```
+
+Todos los modelos contienen datos con una distribución normal, no presentan datos atípicos (outiliers) y no existe sobredispersión de los datos.
+
+
+## 7. Ejemplo para interacciones entre variables categóricas
+```{r}
+tipo_habitat = glm(GLABRA ~ Type + habitat, family = "binomial", data = Aves2)
+```
+
+```{r}
+summary(tipo_habitat)
+```
+
+```{r}
+plot(ggpredict(tipo_habitat, terms = c("Type", "habitat")))
+```
+
+
+
